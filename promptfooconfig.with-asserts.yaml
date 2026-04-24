@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# 📋 設定檔案結構定義 - 指向 promptfoo 官方配置 schema，用於 IDE 自動完成和驗證
+
+description: 'RAG - End to end test with comparison'
+# 📝 測試描述 - 簡要說明這個測試配置的目的：RAG 端到端測試與比較
+
+prompts:
+  - '{{query}}'
+# 💬 提示模板 - 定義發送給 LLM 的提示格式，這裡使用變數 {{query}} 來插入測試問題
+
+providers:
+  - id: python:retrieve.py
+    label: RAG with llama3
+# 🤖 提供者配置 - 指定使用哪個 LLM 或自訂函數
+# id: python:retrieve.py - 使用 Python 檔案作為 provider
+# label: RAG with llama3 - 給這個 provider 一個易讀的名稱
+
+# Model used by llm-rubric and context-faithfulness grading assertions.
+grading:
+  provider: ollama:chat:llama3
+# ⚖️ 評分配置 - 指定用於評估斷言的模型
+# llm-rubric 和 context-faithfulness 斷言會使用這個模型進行評估
+
+# retrieve.py returns output as an object: { answer, context, retrievedDocs }.
+# Normal assertions need a string, so extract only answer here.
+# contextTransform still receives the original provider output object, so it can read output.context.
+defaultTest:
+  options:
+    provider: ollama:chat:llama3
+    transform: 'typeof output === "string" ? output : output.answer'
+# 🏗️ 預設測試選項 - 設定所有測試的通用參數
+# transform: 資料轉換函數，如果輸出是物件則提取 answer 欄位，否則保持原樣
+# 這樣設計是因為 retrieve.py 返回結構化物件，但一般斷言需要字串輸入
+
+tests:
+  # 🧪 第一個測試案例：Apple 總營收變化
+  - vars:
+      query: How has Apple's total net sales changed over time?
+    # 🔍 測試變數 - 定義這個測試案例的輸入問題
+    assert:
+      # ✅ 斷言1：檢查是否包含特定營收數字
+      - type: contains
+        value: '82,959 million'
+        # 🔍 確定性檢查：驗證回答中是否包含這個具體數字
+      # ✅ 斷言2：檢查是否包含另一個營收數字
+      - type: contains
+        value: '117,154 million'
+        # 🔍 確定性檢查：驗證回答中是否包含這個具體數字
+      # ✅ 斷言3：檢查上下文忠實度
+      - type: context-faithfulness
+        threshold: 0.9
+        contextTransform: 'output.context'
+        # 🎯 評估指標：檢查回答是否完全基於檢索到的上下文
+        # threshold: 0.9 - 通過閾值為 90%
+        # contextTransform: 從輸出物件中提取 context 欄位進行評估
+
+  # 🧪 第二個測試案例：Apple 毛利率變化因素
+  - vars:
+      query: What are the major factors contributing to the change in Apple's gross margin in the most recent 10-Q compared to the previous quarters?
+    assert:
+      # ✅ 斷言：使用 LLM 評分規則檢查
+      - type: llm-rubric
+        value: 'cites weakness in foreign currencies relative to the U.S. dollar'
+        # 🤖 LLM 評分：讓 grading provider 檢查回答是否提及外匯貨幣相對美元的弱勢
+
+  # 🧪 第三個測試案例：Apple 營運費用變化
+  - vars:
+      query: Has there been any significant change in Apple's operating expenses over the reported quarters? If so, what are the key drivers for this change?
+    assert:
+      # ✅ 斷言：檢查是否包含關鍵詞
+      - type: contains
+        value: 'net sales'
+        # 🔍 確定性檢查：驗證回答中是否提及淨銷售額
+
+  # 🧪 第四個測試案例：Apple iPhone 銷售波動
+  - vars:
+      query: How has Apple's revenue from iPhone sales fluctuated across quarters?
+    assert:
+      # ✅ 斷言：檢查是否同時包含多個年份
+      - type: icontains-all
+        value:
+          - '2023'
+          - '2022'
+          - '2021'
+        # 🔍 不區分大小寫檢查：驗證回答中同時包含這三個年份
+
+  # 🧪 第五個測試案例：外匯匯率對 Apple 財務表現的影響
+  - vars:
+      query: What is the impact of foreign exchange rates on Apple's financial performance? List this out separately for each reported period.
+    assert:
+      # ✅ 斷言1：LLM 評分規則檢查
+      - type: llm-rubric
+        value: 'includes specific commentary on foreign exchange'
+        # 🤖 LLM 評分：檢查是否包含具體的外匯評論
+      # ✅ 斷言2：上下文忠實度檢查
+      - type: context-faithfulness
+        contextTransform: 'output.context'
+        threshold: 0.9
+        # 🎯 評估指標：檢查回答是否基於檢索上下文，通過閾值 90%
+
+  # 🧪 第六個測試案例：Apple 流動性與現金流變化
+  - vars:
+      query: Are there any notable changes in Apple's liquidity position or cash flows as reported in these 10-Qs?
+    assert:
+      # ✅ 斷言1：LLM 評分規則檢查
+      - type: llm-rubric
+        value: 'no notable changes'
+        # 🤖 LLM 評分：檢查回答是否正確指出沒有顯著變化
+      # ✅ 斷言2：上下文忠實度檢查
+      - type: context-faithfulness
+        contextTransform: 'output.context'
+        threshold: 0.9
+        # 🎯 評估指標：確保回答忠實於檢索到的財務報表內容

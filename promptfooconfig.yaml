@@ -1,0 +1,226 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: 'RAG Evaluation - Financial QA with Context Faithfulness'
+
+prompts:
+  - '{{query}}'
+
+providers:
+  - id: file://retrieve.py
+    label: rag-financial-qa
+    config:
+      topK: 5
+
+defaultTest:
+  options:
+    provider: file://retrieve.py
+
+derivedMetrics:
+  - name: rag_quality_score
+    value: '(faithfulness * 0.45 + context_relevance * 0.25 + answer_relevance * 0.2) / 0.9 + fail_explanation * 0.1'
+  - name: hallucination_risk_score
+    value: '1 - faithfulness'
+
+tests:
+  - vars:
+      query: How has Apple's total net sales changed over time?
+    assert:
+      - type: contains
+        value: '82,959 million'
+      - type: contains
+        value: '117,154 million'
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: What are the major factors contributing to the change in Apple's gross margin in the most recent 10-Q compared to the previous quarters?
+    assert:
+      - type: context-faithfulness
+        threshold: 0.9
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: Has there been any significant change in Apple's operating expenses over the reported quarters? If so, what are the key drivers for this change?
+    assert:
+      - type: contains
+        value: 'net sales'
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: How has Apple's revenue from iPhone sales fluctuated across quarters?
+    assert:
+      - type: icontains-all
+        value:
+          - '2023'
+          - '2022'
+          - '2021'
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: Can any trends be identified in Apple's Services segment revenue over the reported periods?
+    assert:
+      - type: icontains
+        value: services
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: What is the impact of foreign exchange rates on Apple's financial performance? List this out separately for each reported period.
+    assert:
+      - type: context-faithfulness
+        threshold: 0.9
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: Are there any notable changes in Apple's liquidity position or cash flows as reported in these 10-Qs?
+    assert:
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: Examine how Intel's effective tax rate in the most recent 10-Q compares with the tax-related discussions in the notes section.
+    assert:
+      - type: contains
+        value: '690.2%'
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
+
+  - vars:
+      query: In Amazon's latest 10-Q, how does the revenue distribution across its diverse business segments like e-commerce, AWS, and others compare to the costs incurred in these segments?
+    assert:
+      - type: context-faithfulness
+        threshold: 0.85
+        metric: faithfulness
+        contextTransform: 'output.context'
+      - type: context-relevance
+        threshold: 0.8
+        metric: context_relevance
+        contextTransform: 'output.context'
+      - type: answer-relevance
+        threshold: 0.8
+        metric: answer_relevance
+      - type: llm-rubric
+        metric: fail_explanation
+        value: |
+          Evaluate whether the answer is fully supported by the retrieved context.
+          Fail if the answer adds numbers, periods, causes, explanations, or conclusions that are not present in the retrieved context.
+          When failing, explain the exact unsupported claim and why it is unsupported.
