@@ -4,6 +4,17 @@ Loads PDF files from a remote source in parallel, splits them into chunks,
 and stores them in a Chroma vector database.
 """
 
+# ----------------------------------------------------------------------------
+# ingest.py 功能說明
+#
+# 1. 從遠端 URL 下載多個 SEC 10-Q PDF 檔案。
+# 2. 透過 PyPDFLoader 讀取 PDF 內容，並用 RecursiveCharacterTextSplitter 切分成小段落。
+# 3. 使用平行執行緒加速多檔案處理，並透過 tqdm 顯示進度。
+# 4. 將所有切分後的 chunk 集合後，建立 Chroma 向量資料庫。
+# 5. 依照 batch_size 分批新增文件，避免一次性記憶體與寫入瓶頸。
+# 6. 最終將向量資料庫儲存到 `db/`，供 `retrieve.py` 檢索使用。
+# ----------------------------------------------------------------------------
+
 from __future__ import annotations
 
 import concurrent.futures
@@ -35,7 +46,25 @@ OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"
 # List of PDF files to process
 PDF_FILES: List[str] = [
     "2022 Q3 AAPL.pdf",
-    "2022 Q3 MSFT.pdf"
+    "2022 Q3 AMZN.pdf",
+    "2022 Q3 INTC.pdf",
+    "2022 Q3 MSFT.pdf",
+    "2022 Q3 NVDA.pdf",
+    "2023 Q1 AAPL.pdf",
+    "2023 Q1 AMZN.pdf",
+    "2023 Q1 INTC.pdf",
+    "2023 Q1 MSFT.pdf",
+    "2023 Q1 NVDA.pdf",
+    "2023 Q2 AAPL.pdf",
+    "2023 Q2 AMZN.pdf",
+    "2023 Q2 INTC.pdf",
+    "2023 Q2 MSFT.pdf",
+    "2023 Q2 NVDA.pdf",
+    "2023 Q3 AAPL.pdf",
+    "2023 Q3 AMZN.pdf",
+    "2023 Q3 INTC.pdf",
+    "2023 Q3 MSFT.pdf",
+    "2023 Q3 NVDA.pdf",
 ]
 
 
@@ -105,7 +134,9 @@ def create_vector_store(chunks: List[Document], batch_size: int = 100) -> None:
         chunks: List of document chunks to embed
         batch_size: Number of documents to process in each batch
     """
-    embeddings: OllamaEmbeddings = OllamaEmbeddings(model=OLLAMA_EMBEDDING_MODEL)
+    embeddings: OpenAIEmbeddings = OpenAIEmbeddings(
+        model=OPENAI_AI_EMBEDDING_MODEL, openai_api_key=OPENAI_API_KEY
+    )
 
     logging.info("Creating vector store...")
 

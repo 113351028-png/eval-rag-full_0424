@@ -1,3 +1,20 @@
-venv
-__pycache__
-db
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Env
+.env
+
+# Local vector DB
+db/
+
+# Installers
+*.exe
+*.msi
+
+# Node
+node_modules/
+
+# Promptfoo output / cache
+.promptfoo/

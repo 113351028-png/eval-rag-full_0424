@@ -66,13 +66,26 @@ pip install -r requirements.txt
 `retrieve.py` 是 promptfoo 會呼叫的 Python provider，負責：
 
 1. 載入本地 `db/` Chroma collection。
-2. 使用 `nomic-embed-text` 將 query 轉成 embedding。
-3. 依照 `topK` 取回相關文件片段。
-4. 將 context 與問題組成 prompt。
-5. 使用 `llama3` 產生回答。
-6. 回傳回答與檢索 context，供 promptfoo assert 使用。
+2. 使用 `langchain_ollama.OllamaEmbeddings` 和 `nomic-embed-text` 轉換 query 成 embedding。
+3. 依照 `topK` 取回最相關的文件片段。
+4. 將文件片段組成 `context`，並透過 `ChatPromptTemplate` 產生最終 prompt。
+5. 使用 `langchain_ollama.ChatOllama` 連到本地 `llama3` 模型產生回答。
+6. 回傳 `output` 與 `metadata`，包含檢索到的 `context` 和 `retrievedDocs`，供 promptfoo assert 使用。
 
-> 為避免 README 與原始碼重複，完整實作請直接查看 `retrieve.py`。
+### `retrieve.py` 說明
+
+`retrieve.py` 的主要流程如下：
+
+- 初始化 `Chroma` 資料庫，並設定 `persist_directory` 為 `db`。
+- 執行 `similarity_search_with_score` 取得最相關 `topK` 文件。
+- 將結果合併成一段字串 `context_text`，作為 prompt 的檢索內容。
+- 使用 `ChatOllama` 呼叫 `llama3` 模型產生回答，溫度設為 `0` 以提高穩定性。
+- 回傳字典格式的結果：
+  - `output`: 模型回答文字
+  - `metadata.context`: 使用到的檢索內容
+  - `metadata.retrievedDocs`: 每筆文件內容、分數、metadata
+
+> 這樣設計可以讓 `promptfoo` 直接斷言回答內容與檢索來源，並且保留檢索結果供後續分析。
 
 ## 第五步：建立向量資料庫
 
@@ -116,7 +129,6 @@ promptfoo view
 ```
 
 ## 完成後的目錄結構
-
 ```text
 專案目錄/
 ├── ingest.py

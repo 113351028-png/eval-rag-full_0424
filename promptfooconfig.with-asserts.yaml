@@ -21,13 +21,12 @@ grading:
 # ⚖️ 評分配置 - 指定用於評估斷言的模型
 # llm-rubric 和 context-faithfulness 斷言會使用這個模型進行評估
 
-# retrieve.py returns output as an object: { answer, context, retrievedDocs }.
-# Normal assertions need a string, so extract only answer here.
-# contextTransform still receives the original provider output object, so it can read output.context.
+# retrieve.py returns output as a plain string (the LLM answer).
+# Context is stored in metadata and accessed via context.metadata.context
+# in contextTransform. No transform needed here since output is already a string.
 defaultTest:
   options:
     provider: ollama:chat:llama3
-    transform: 'typeof output === "string" ? output : output.answer'
 # 🏗️ 預設測試選項 - 設定所有測試的通用參數
 # transform: 資料轉換函數，如果輸出是物件則提取 answer 欄位，否則保持原樣
 # 這樣設計是因為 retrieve.py 返回結構化物件，但一般斷言需要字串輸入
@@ -49,10 +48,10 @@ tests:
       # ✅ 斷言3：檢查上下文忠實度
       - type: context-faithfulness
         threshold: 0.9
-        contextTransform: 'output.context'
+        contextTransform: 'context.metadata.context'
         # 🎯 評估指標：檢查回答是否完全基於檢索到的上下文
         # threshold: 0.9 - 通過閾值為 90%
-        # contextTransform: 從輸出物件中提取 context 欄位進行評估
+        # contextTransform: 從 metadata 中提取 context 欄位（第二參數 context.metadata）
 
   # 🧪 第二個測試案例：Apple 毛利率變化因素
   - vars:
@@ -94,7 +93,7 @@ tests:
         # 🤖 LLM 評分：檢查是否包含具體的外匯評論
       # ✅ 斷言2：上下文忠實度檢查
       - type: context-faithfulness
-        contextTransform: 'output.context'
+        contextTransform: 'context.metadata.context'
         threshold: 0.9
         # 🎯 評估指標：檢查回答是否基於檢索上下文，通過閾值 90%
 
@@ -108,6 +107,6 @@ tests:
         # 🤖 LLM 評分：檢查回答是否正確指出沒有顯著變化
       # ✅ 斷言2：上下文忠實度檢查
       - type: context-faithfulness
-        contextTransform: 'output.context'
+        contextTransform: 'context.metadata.context'
         threshold: 0.9
         # 🎯 評估指標：確保回答忠實於檢索到的財務報表內容
